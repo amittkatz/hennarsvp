@@ -34,14 +34,14 @@
       transform:translate(-50%,-50%);
       width:100vw;
       height:100svh;
-      object-fit:contain;          /* show whole invite, centered */
+      object-fit:contain;          /* desktop/tablet: show whole invite */
       object-position:center center;
       display:block;
       pointer-events:none;         /* avoid accidental drag */
       user-select:none;
     }
 
-    /* Form overlay that we position via JS exactly under "Dress code" */
+    /* Form overlay (desktop/tablet positioned via JS below) */
     .form-wrapper{
       position:absolute;           /* top/left set by JS */
       transform:translate(-50%,0); /* center horizontally around left 50% */
@@ -86,12 +86,37 @@
     }
     @keyframes spin{ to{ transform:rotate(360deg);} }
     #responseMsg{ margin-top:10px; font-weight:700; font-size:14px; text-align:center; }
+
+    /* ==== MOBILE ONLY: fill screen (allow bottom crop) + place form ==== */
+    @media (max-width: 767px) {
+      html, body {
+        height:100svh;
+        overflow:hidden;
+        background:none; /* we render with the <img> */
+      }
+      .stage img{
+        width:100vw;
+        height:100svh;
+        object-fit:cover;           /* fill screen, crop bottom if needed */
+        object-position:top center; /* keep header/top perfect */
+      }
+      /* On mobile we pin the form with a stable top; JS will skip positioning */
+      .form-wrapper{
+        position:fixed;
+        top:64svh;                  /* tweak 62–66svh to taste */
+        left:50%;
+        transform:translateX(-50%);
+        width:100%;
+        padding:0 16px;
+      }
+      form{ max-width:260px; }
+    }
   </style>
 </head>
 <body>
 
   <div class="stage">
-    <!-- Use your tall 1080×2340 export here -->
+    <!-- Use your tall image here -->
     <img id="inviteImg" src="henna1.png" alt="Invitation">
     <div id="formWrap" class="form-wrapper">
       <form id="rsvpForm">
@@ -118,14 +143,14 @@
   </div>
 
   <script>
-    // ====== CONFIG: tweak this if you move the "Dress code" line in Canva ======
-    // Position of the form measured from top of the image (0 = top, 1 = bottom)
+    // ====== CONFIG (desktop/tablet only): form anchor inside the image ======
     const ANCHOR_Y = 0.63; // try 0.62–0.66 to fine‑tune on your export
 
     const img = document.getElementById('inviteImg');
     const wrap = document.getElementById('formWrap');
+    const mqMobile = window.matchMedia('(max-width: 767px)');
 
-    function placeForm(){
+    function placeFormDesktop(){
       const r = img.getBoundingClientRect();
       if (!r.width || !r.height) return;
 
@@ -134,23 +159,31 @@
 
       wrap.style.top = y + 'px';
       wrap.style.left = x + 'px';
+      wrap.style.position = 'absolute';
+      wrap.style.transform = 'translate(-50%,0)';
 
-      // keep the form fully visible if screens are very short
-      const fw = wrap.querySelector('form');
-      const fRect = fw.getBoundingClientRect();
+      // keep visible on short windows
+      const fRect = wrap.querySelector('form').getBoundingClientRect();
       const bottom = y + fRect.height;
-      const limit = window.innerHeight - 8; // small padding
+      const limit = window.innerHeight - 8;
       if (bottom > limit){
         wrap.style.top = Math.max(8, limit - fRect.height) + 'px';
       }
     }
 
-    // Recalculate when image loads / orientation changes / resize
-    img.addEventListener('load', placeForm);
-    window.addEventListener('resize', placeForm);
-    window.addEventListener('orientationchange', () => setTimeout(placeForm, 300));
-    // iOS sometimes fires before image paints—run once more after a tick:
-    setTimeout(placeForm, 400);
+    function applyLayout(){
+      if (mqMobile.matches){
+        // Mobile: CSS controls top/left; do nothing here.
+        return;
+      }
+      // Desktop/tablet: position relative to image
+      placeFormDesktop();
+    }
+
+    img.addEventListener('load', applyLayout);
+    window.addEventListener('resize', applyLayout);
+    mqMobile.addEventListener?.('change', applyLayout);
+    setTimeout(applyLayout, 400); // iOS paint delay
 
     // ====== RSVP logic (same API fields) ======
     const scriptURL = 'https://script.google.com/macros/s/AKfycbwQeOi50DvDvKjun1ioqITP9CJNTauXOV0XpsLPqtpfRuiWrRBFlEUxhIR97VKh8yTubg/exec';
@@ -186,7 +219,7 @@
         msg.textContent = '✅ תודה! נשמר בהצלחה';
         form.reset();
         attendanceHidden.value = 'לא מגיע/ה';
-        placeForm(); // in case height changed
+        if (!mqMobile.matches) applyLayout(); // re-place on desktop if height changed
       })
       .catch(() => {
         spinner.style.display = 'none';
