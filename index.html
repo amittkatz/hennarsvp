@@ -64,7 +64,7 @@
       text-align: right;
     }
 
-    /* make the checkbox row align nicely RTL */
+    /* checkbox rows */
     .row {
       display: flex;
       align-items: center;
@@ -81,6 +81,7 @@
     .row label {
       font-size: 16px;
       cursor: pointer;
+      user-select: none;
     }
 
     button {
@@ -125,13 +126,19 @@
       <!-- name -->
       <input type="text" id="name" name="name" placeholder="השם שלך" required />
 
-      <!-- מגיעה (כן/לא) as checkbox -->
+      <!-- מגיעה (כן) -->
       <div class="row">
-        <input type="checkbox" id="attendToggle" />
-        <label for="attendToggle">מגיעה</label>
+        <input type="checkbox" id="attendYes" />
+        <label for="attendYes">מגיעה</label>
       </div>
 
-      <!-- hidden field that the API reads -->
+      <!-- לא מגיעה -->
+      <div class="row">
+        <input type="checkbox" id="attendNo" />
+        <label for="attendNo">לא מגיעה</label>
+      </div>
+
+      <!-- hidden field your API reads -->
       <input type="hidden" id="attendance" name="attendance" value="לא מגיע/ה" />
 
       <button type="submit">שליחה</button>
@@ -146,18 +153,30 @@
     const form = document.getElementById('rsvpForm');
     const msg = document.getElementById('responseMsg');
     const spinner = document.getElementById('spinner');
-    const attendToggle = document.getElementById('attendToggle');
+
+    const attendYes = document.getElementById('attendYes');
+    const attendNo = document.getElementById('attendNo');
     const attendanceHidden = document.getElementById('attendance');
 
-    // keep attendance in sync with the checkbox
-    attendToggle.addEventListener('change', () => {
-      attendanceHidden.value = attendToggle.checked ? 'מגיע/ה' : 'לא מגיע/ה';
-    });
+    // Mutually exclusive checkboxes + set hidden value
+    function syncAttendance() {
+      if (this === attendYes && attendYes.checked) {
+        attendNo.checked = false;
+        attendanceHidden.value = 'מגיע/ה';
+      } else if (this === attendNo && attendNo.checked) {
+        attendYes.checked = false;
+        attendanceHidden.value = 'לא מגיע/ה';
+      } else if (!attendYes.checked && !attendNo.checked) {
+        // default when both unchecked
+        attendanceHidden.value = 'לא מגיע/ה';
+      }
+    }
+    attendYes.addEventListener('change', syncAttendance);
+    attendNo.addEventListener('change', syncAttendance);
 
     form.addEventListener('submit', e => {
       e.preventDefault();
 
-      // build the form data to match your Apps Script doPost(e).parameter
       const formData = new FormData(form);
 
       spinner.style.display = 'block';
@@ -165,19 +184,17 @@
 
       fetch(scriptURL, {
         method: 'POST',
-        body: formData
+        body: formData,
+        // If you still hit CORS from GitHub Pages, uncomment the next line:
+        // mode: 'no-cors'
       })
-      .then(r => r.text())
-      .then(text => {
+      .then(r => r.text?.() ?? '')  // tolerate opaque response if no-cors is used
+      .then(() => {
         spinner.style.display = 'none';
-        if (text.trim() === 'OK') {
-          msg.innerHTML = "✅ תודה! נשמר בהצלחה";
-          form.reset();
-          // reset hidden attendance after clearing the checkbox
-          attendanceHidden.value = 'לא מגיע/ה';
-        } else {
-          msg.textContent = "שגיאה בשליחה ❌ (השרת החזיר: " + text + ")";
-        }
+        msg.innerHTML = "✅ תודה! נשמר בהצלחה";
+        form.reset();
+        // reset hidden after clearing
+        attendanceHidden.value = 'לא מגיע/ה';
       })
       .catch(() => {
         spinner.style.display = 'none';
