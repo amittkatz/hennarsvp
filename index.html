@@ -19,18 +19,37 @@
       background-color: #ffffff;
     }
 
+    .mobile-bg { display: none; }
+
     @media (max-width: 767px) {
       html, body {
-      background-size: contain;       /* keep entire image visible */
-      background-position: top center;/* sit the invite higher */
+        background: none;
       }
-      .form-wrapper { top: 55%; }
-    }
 
-    @media (min-width: 768px) {
+      .mobile-bg {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        display: block;
+      }
+
+      .mobile-bg img {
+        width: 100vw;
+        height: 100vh;
+        object-fit: contain;
+        object-position: top center;
+        display: block;
+        background-color: #f3e9d6; /* cream fill behind invite */
+      }
+
       .form-wrapper {
-        top: 55%;
-        transform: translateY(0%);
+        position: fixed;
+        z-index: 1;
+        top: 63vh; /* adjust until under Dress code */
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        padding: 0 16px;
       }
     }
 
@@ -41,12 +60,10 @@
       display: flex;
       justify-content: center;
       padding: 0 16px;
-      transform: translateX(-10px); /* move left by 10px */
-
     }
 
     form {
-      background-color: #f9f4eb;
+      background-color: #f9f4eb; /* cream-like box */
       padding: 12px 14px;
       border-radius: 10px;
       box-shadow: 0 0 8px rgba(0,0,0,0.1);
@@ -54,7 +71,7 @@
       width: 100%;
     }
 
-    input, button, textarea {
+    input, button {
       padding: 8px;
       margin: 8px 0;
       width: 100%;
@@ -66,7 +83,6 @@
       text-align: right;
     }
 
-    /* checkbox rows */
     .row {
       display: flex;
       align-items: center;
@@ -87,12 +103,12 @@
     }
 
     button {
-      background-color: #0f6f7e;
-      color: white;
+      background-color: #ffffff; /* white button */
+      color: #0f6f7e; /* blue from invite */
+      border: 2px solid #0f6f7e;
       cursor: pointer;
       font-weight: bold;
       text-align: center;
-      border: none;
     }
 
     .spinner {
@@ -113,34 +129,29 @@
       font-weight: bold;
       text-align: center;
     }
-
-    a {
-      color: #2b3a67;
-      text-decoration: underline;
-      font-weight: bold;
-    }
   </style>
 </head>
 <body>
 
+  <!-- MOBILE background image -->
+  <div class="mobile-bg">
+    <img src="henna.png" alt="Invitation">
+  </div>
+
   <div class="form-wrapper">
     <form id="rsvpForm">
-      <!-- name -->
       <input type="text" id="name" name="name" placeholder="השם שלך" required />
 
-      <!-- מגיעה (כן) -->
       <div class="row">
         <input type="checkbox" id="attendYes" />
         <label for="attendYes">מגיעה</label>
       </div>
 
-      <!-- לא מגיעה -->
       <div class="row">
         <input type="checkbox" id="attendNo" />
         <label for="attendNo">לא מגיעה</label>
       </div>
 
-      <!-- hidden field your API reads -->
       <input type="hidden" id="attendance" name="attendance" value="לא מגיע/ה" />
 
       <button type="submit">שליחה</button>
@@ -155,12 +166,10 @@
     const form = document.getElementById('rsvpForm');
     const msg = document.getElementById('responseMsg');
     const spinner = document.getElementById('spinner');
-
     const attendYes = document.getElementById('attendYes');
     const attendNo = document.getElementById('attendNo');
     const attendanceHidden = document.getElementById('attendance');
 
-    // Mutually exclusive checkboxes + set hidden value
     function syncAttendance() {
       if (this === attendYes && attendYes.checked) {
         attendNo.checked = false;
@@ -169,7 +178,6 @@
         attendYes.checked = false;
         attendanceHidden.value = 'לא מגיע/ה';
       } else if (!attendYes.checked && !attendNo.checked) {
-        // default when both unchecked
         attendanceHidden.value = 'לא מגיע/ה';
       }
     }
@@ -178,24 +186,17 @@
 
     form.addEventListener('submit', e => {
       e.preventDefault();
-
       const formData = new FormData(form);
 
       spinner.style.display = 'block';
       msg.textContent = '';
 
-      fetch(scriptURL, {
-        method: 'POST',
-        body: formData,
-        // If you still hit CORS from GitHub Pages, uncomment the next line:
-        // mode: 'no-cors'
-      })
-      .then(r => r.text?.() ?? '')  // tolerate opaque response if no-cors is used
+      fetch(scriptURL, { method: 'POST', body: formData })
+      .then(r => r.text?.() ?? '')
       .then(() => {
         spinner.style.display = 'none';
         msg.innerHTML = "✅ תודה! נשמר בהצלחה";
         form.reset();
-        // reset hidden after clearing
         attendanceHidden.value = 'לא מגיע/ה';
       })
       .catch(() => {
