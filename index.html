@@ -87,30 +87,37 @@
     @keyframes spin{ to{ transform:rotate(360deg);} }
     #responseMsg{ margin-top:10px; font-weight:700; font-size:14px; text-align:center; }
 
-    /* ==== MOBILE ONLY: fill screen (allow bottom crop) + place form ==== */
-    @media (max-width: 767px) {
-      html, body {
-        height:100svh;
-        overflow:hidden;
-        background:none; /* we render with the <img> */
-      }
-      .stage img{
-        width:100vw;
-        height:100svh;
-        object-fit:cover;           /* fill screen, crop bottom if needed */
-        object-position:top center; /* keep header/top perfect */
-      }
-      /* On mobile we pin the form with a stable top; JS will skip positioning */
-      .form-wrapper{
-        position:fixed;
-        top:64svh;                  /* tweak 62–66svh to taste */
-        left:50%;
-        transform:translateX(-50%);
-        width:100%;
-        padding:0 16px;
-      }
-      form{ max-width:260px; }
+    /* ==== MOBILE ONLY ==== */
+  @media (max-width: 767px) {
+    html, body {
+      height:100svh;
+      overflow:hidden;
+      background:none; /* we render with the <img> */
     }
+    .stage img{
+      width:100vw;
+      height:100svh;
+      object-fit:cover;           /* fill screen, crop bottom if needed */
+      object-position:top center; /* keep header/top perfect */
+    }
+    /* Form pinned a bit lower */
+    .form-wrapper{
+      position:fixed;
+      top:70svh;                  /* was 64svh → now ~1cm lower */
+      left:50%;
+      transform:translateX(-50%);
+      width:100%;
+      padding:0 16px;
+    }
+    form{ 
+      max-width:260px; 
+    }
+    /* Center-align the name field and submit button text */
+    input[type="text"], 
+    button {
+      text-align:center;
+    }
+  }
   </style>
 </head>
 <body>
