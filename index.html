@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amit - mikveh henna party!</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      direction: ltr;
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      background: url('prewedd.png') no-repeat center center;
+      background-size: contain;
+      background-color: #ffffff;
+    }
+
+    @media (max-width: 767px) {
+      html, body {
+        background-size: cover;
+        background-position: center center;
+      }
+      .form-wrapper { top: 55%; }
+    }
+
+    @media (min-width: 768px) {
+      .form-wrapper {
+        top: 55%;
+        transform: translateY(0%);
+      }
+    }
+
+    .form-wrapper {
+      position: absolute;
+      top: 60%;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 0 16px;
+    }
+
+    form {
+      background-color: rgba(255, 255, 255, 0.94);
+      padding: 12px 14px;
+      border-radius: 10px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      max-width: 240px;
+      width: 100%;
+    }
+
+    input, button, textarea {
+      padding: 8px;
+      margin: 8px 0;
+      width: 100%;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      direction: rtl;
+      text-align: right;
+    }
+
+    /* make the checkbox row align nicely RTL */
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: flex-start;
+      direction: rtl;
+      text-align: right;
+      margin: 8px 0;
+    }
+    .row input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+    }
+    .row label {
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button {
+      background-color: #2b3a67;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      text-align: center;
+      border: none;
+    }
+
+    .spinner {
+      margin: 15px auto;
+      width: 30px;
+      height: 30px;
+      border: 4px solid #ccc;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      display: none;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    #responseMsg {
+      margin-top: 12px;
+      font-size: 13px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    a {
+      color: #2b3a67;
+      text-decoration: underline;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form-wrapper">
+    <form id="rsvpForm">
+      <!-- name -->
+      <input type="text" id="name" name="name" placeholder="השם שלך" required />
+
+      <!-- מגיעה (כן/לא) as checkbox -->
+      <div class="row">
+        <input type="checkbox" id="attendToggle" />
+        <label for="attendToggle">מגיעה</label>
+      </div>
+
+      <!-- hidden field that the API reads -->
+      <input type="hidden" id="attendance" name="attendance" value="לא מגיע/ה" />
+
+      <button type="submit">שליחה</button>
+
+      <div id="spinner" class="spinner"></div>
+      <p id="responseMsg"></p>
+    </form>
+  </div>
+
+  <script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbwQeOi50DvDvKjun1ioqITP9CJNTauXOV0XpsLPqtpfRuiWrRBFlEUxhIR97VKh8yTubg/exec';
+    const form = document.getElementById('rsvpForm');
+    const msg = document.getElementById('responseMsg');
+    const spinner = document.getElementById('spinner');
+    const attendToggle = document.getElementById('attendToggle');
+    const attendanceHidden = document.getElementById('attendance');
+
+    // keep attendance in sync with the checkbox
+    attendToggle.addEventListener('change', () => {
+      attendanceHidden.value = attendToggle.checked ? 'מגיע/ה' : 'לא מגיע/ה';
+    });
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+
+      // build the form data to match your Apps Script doPost(e).parameter
+      const formData = new FormData(form);
+
+      spinner.style.display = 'block';
+      msg.textContent = '';
+
+      fetch(scriptURL, {
+        method: 'POST',
+        body: formData
+      })
+      .then(r => r.text())
+      .then(text => {
+        spinner.style.display = 'none';
+        if (text.trim() === 'OK') {
+          msg.innerHTML = "✅ תודה! נשמר בהצלחה";
+          form.reset();
+          // reset hidden attendance after clearing the checkbox
+          attendanceHidden.value = 'לא מגיע/ה';
+        } else {
+          msg.textContent = "שגיאה בשליחה ❌ (השרת החזיר: " + text + ")";
+        }
+      })
+      .catch(() => {
+        spinner.style.display = 'none';
+        msg.textContent = "שגיאה בשליחה ❌";
+      });
+    });
+  </script>
+
+</body>
+</html>
